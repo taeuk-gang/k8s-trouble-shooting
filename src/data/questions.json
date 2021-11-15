@@ -1,0 +1,485 @@
+[
+  {
+    "cli": "kubectl get pods",
+    "title": "보류 중인(Pending) 파드가 있나요?",
+    "path": "get_pod",
+    "questions": [
+      {
+        "cli": "kubectl describe pod <pod-name>",
+        "direction": "예",
+        "title": "쿠버네티스 클러스터의 용량이 부족한가요?",
+        "path": "describe_pod",
+        "questions": [
+          {
+            "direction": "예",
+            "title": "쿠버네티스 클러스터의 용량이 부족한가요?",
+            "answers": ["쿠버네티스 클러스터의 규모를 확장하세요."],
+            "path": "cluster_storage"
+          },
+          {
+            "direction": "아니오",
+            "title": "자원 할당 (ResourceQuota) 제한에 도달했나요?",
+            "path": "resourceQuota",
+            "questions": [
+              {
+                "direction": "예",
+                "title": "자원 할당 (ResourceQuota) 제한에 도달했나요?",
+                "path": "resourceQuota-answer",
+                "answers": ["자원 할당 (ResourceQuota) 제한을 조정하세요."]
+              },
+              {
+                "direction": "아니오",
+                "title": "보류 중인(Pending) PVC (PersistentVolumeClaim) 가 마운트되고 있나요?",
+                "path": "PVC",
+                "questions": [
+                  {
+                    "direction": "예",
+                    "title": "보류 중인(Pending) PVC (PersistentVolumeClaim) 가 마운트되고 있나요?",
+                    "path": "PVC-answer",
+                    "answers": [
+                      "PVC (PersistentVolumeClaim) 에 문제가 있습니다."
+                    ]
+                  },
+                  {
+                    "cli": "kubectl get pods -o wide",
+                    "direction": "아니오",
+                    "title": "파드가 노드에 할당 되었나요?",
+                    "path": "pods-wide",
+                    "questions": [
+                      {
+                        "direction": "예",
+                        "title": "파드가 노드에 할당 되었나요?",
+                        "path": "pods-wide-answer-yes",
+                        "answers": ["Kubelet에 문제가 있습니다"]
+                      },
+                      {
+                        "direction": "아니오",
+                        "title": "파드가 노드에 할당 되었나요?",
+                        "path": "pods-wide-answer-no",
+                        "answers": [
+                          "쿠버 스케줄러(Scheduler)에 문제가 있습니다."
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "direction": "아니오",
+        "title": "파드가 동작 중 (Running) 인가요?",
+        "path": "pod-running",
+        "questions": [
+          {
+            "direction": "예",
+            "title": "파드가 준비된(Ready) 상태인가요?",
+            "path": "pod-running-yes",
+            "questions": [
+              {
+                "cli": "kubectl port-forward <pod-name> 8080:<pod-port>",
+                "direction": "예",
+                "title": "애플리케이션에 접근이 가능한가요?",
+                "path": "yes",
+                "questions": [
+                  {
+                    "direction": "예",
+                    "title": "파드 정상 동작을 확인하였습니다.",
+                    "path": "yes",
+                    "questions": [
+                      {
+                        "next": ">>> 다음단계: 서비스 확인",
+                        "cli": "kubectl describe service <service-name>",
+                        "title": "엔드포인트(endpoints) 목록이 확인되나요?",
+                        "path": "point",
+                        "questions": [
+                          {
+                            "cli": "kubectl port-forward service/<service-name> 8080:<service-port>",
+                            "direction": "예",
+                            "title": "애플리케이션에 접근할 수 있나요?",
+                            "path": "yes",
+                            "questions": [
+                              {
+                                "direction": "예",
+                                "title": "서비스 정상 동작을 확인하였습니다.",
+                                "path": "yes",
+                                "questions": [
+                                  {
+                                    "next": ">>> 다음단계: 인그레스 확인",
+                                    "cli": "kubectl describe ingress <ingress-name>",
+                                    "title": "백엔드(Backends) 목록이 확인되나요?",
+                                    "path": "point",
+                                    "questions": [
+                                      {
+                                        "cli": "kubectl port-forward <ingress-pod-name> 8080:<ingress-port>",
+                                        "direction": "예",
+                                        "title": "애플리케이션에 접근할 수 있나요?",
+                                        "path": "yes",
+                                        "questions": [
+                                          {
+                                            "direction": "예",
+                                            "title": "인그레스 정상 동작을 확인하였습니다.",
+                                            "path": "yes",
+                                            "questions": [
+                                              {
+                                                "next": ">>> 다음단계: 인프라 확인",
+                                                "title": "인터넷을 통해 접속이 가능한가요?",
+                                                "path": "next",
+                                                "questions": [
+                                                  {
+                                                    "direction": "예",
+                                                    "title": "인터넷을 통해 접속이 가능한가요?",
+                                                    "path": "yes",
+                                                    "answers": [
+                                                      "쿠버네티스 트러블슈팅 검사가 끝났습니다."
+                                                    ]
+                                                  },
+                                                  {
+                                                    "direction": "아니오",
+                                                    "title": "인터넷을 통해 접속이 가능한가요?",
+                                                    "path": "no",
+                                                    "answers": [
+                                                      "쿠버네티스 클러스터를 구성하고 있는 인프라에 관련된 문제입니다. 인프라 구성을 다시 한번 점검하세요."
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "direction": "아니오",
+                                            "title": "애플리케이션에 접근할 수 있나요?",
+                                            "path": "no",
+                                            "answers": [
+                                              "인그레스 컨트롤러 (Ingress Controller)의 문제입니다. 사용하는 인그레스 컨트롤러의 문서를 참고하세요."
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "direction": "아니오",
+                                        "title": "인그레스(Ingress)의 서비스 이름과 포트가 실제 서비스의 이름과 포트와 일치하나요?",
+                                        "path": "no",
+                                        "questions": [
+                                          {
+                                            "direction": "예",
+                                            "title": "인그레스(Ingress)의 서비스 이름과 포트가 실제 서비스의 이름과 포트와 일치하나요?",
+                                            "path": "yes",
+                                            "answers": [
+                                              "인그레스 컨트롤러 (Ingress Controller)의 문제입니다. 사용하는 인그레스 컨트롤러의 문서를 참고하세요."
+                                            ]
+                                          },
+                                          {
+                                            "direction": "아니오",
+                                            "title": "인그레스(Ingress)의 서비스 이름과 포트가 실제 서비스의 이름과 포트와 일치하나요?",
+                                            "path": "no",
+                                            "answers": [
+                                              "인그레스(Ingress)에서 백엔드(Backends)의 서비스 이름과 포트를 수정하세요."
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "direction": "아니오",
+                                "title": "서비스의 대상 포트 (targetPort)와 파드의 컨테이너 포트 (containerPort)가 일치하나요?",
+                                "path": "no",
+                                "questions": [
+                                  {
+                                    "direction": "예",
+                                    "title": "서비스의 대상 포트 (targetPort)와 파드의 컨테이너 포트 (containerPort)가 일치하나요?",
+                                    "path": "yes",
+                                    "answers": [
+                                      "쿠버 프록시(kube-proxy)에 문제가 있습니다."
+                                    ]
+                                  },
+                                  {
+                                    "direction": "아니오",
+                                    "title": "서비스의 대상 포트 (targetPort)와 파드의 컨테이너 포트 (containerPort)가 일치하나요?",
+                                    "path": "no",
+                                    "answers": [
+                                      "서비스 대상 포트(targetPort)와 파드 컨테이너 포트(containerPort) 를 동일하게 수정하세요."
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "direction": "아니오",
+                            "title": "서비스 셀렉터 (Selector)와 파드 레이블(Label)이 일치하나요?",
+                            "path": "no",
+                            "questions": [
+                              {
+                                "direction": "예",
+                                "title": "파드에 IP 주소가 할당되어 있나요?",
+                                "path": "yes",
+                                "questions": [
+                                  {
+                                    "direction": "예",
+                                    "title": "파드에 IP 주소가 할당되어 있나요?",
+                                    "path": "yes",
+                                    "answers": ["Kubelet에 문제가 있습니다."]
+                                  },
+                                  {
+                                    "direction": "아니오",
+                                    "title": "파드에 IP 주소가 할당되어 있나요?",
+                                    "path": "no",
+                                    "answers": [
+                                      "쿠버 컨트롤러 매니저 (controller manager)에 문제가 있습니다."
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "direction": "아니오",
+                                "title": "서비스 셀렉터 (Selector)와 파드 레이블(Label)이 일치하나요?",
+                                "path": "no",
+                                "answers": [
+                                  "서비스 셀렉터(Selector)를 파드 레이블(Label)과 일치하도록 수정하세요."
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "direction": "아니오",
+                    "title": "컨테이너가 노출하는 포트가 올바르며, 모든 IP(0.0.0.0)에 대해 수신(LISTENING)이 가능한 상태인가요?",
+                    "path": "no",
+                    "questions": [
+                      {
+                        "direction": "예",
+                        "title": "컨테이너가 노출하는 포트가 올바르며, 모든 IP(0.0.0.0)에 대해 수신(LISTENING)이 가능한 상태인가요?",
+                        "path": "yes",
+                        "answers": ["알려지지 않은 (Unknown) 상태입니다."]
+                      },
+                      {
+                        "direction": "아니오",
+                        "title": "컨테이너가 노출하는 포트가 올바르며, 모든 IP(0.0.0.0)에 대해 수신(LISTENING)이 가능한 상태인가요?",
+                        "path": "no",
+                        "answers": [
+                          "애플리케이션을 수정하여 모든 IP(0.0.0.0)에 대해서 수신(LISTENING) 가능해야 합니다."
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "cli": "kubectl describe pod <pod-name>",
+                "direction": "아니오",
+                "title": "준비성 프로브 (Readiness probe)의 결과가 실패인가요?",
+                "path": "no",
+                "questions": [
+                  {
+                    "direction": "예",
+                    "title": "준비성 프로브 (Readiness probe)의 결과가 실패인가요?",
+                    "path": "yes",
+                    "answers": [
+                      "준비성 프로브 (Readiness probe) 설정을 수정하세요."
+                    ]
+                  },
+                  {
+                    "direction": "아니오",
+                    "title": "준비성 프로브 (Readiness probe)의 결과가 실패인가요?",
+                    "path": "no",
+                    "answers": ["알려지지 않은 (Unknown) 상태입니다."]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cli": "kubectl logs <pod-name>",
+            "direction": "아니오",
+            "title": "애플리케이션의 로그를 확인할 수 있나요?",
+            "path": "pods-log",
+            "questions": [
+              {
+                "direction": "예",
+                "title": "애플리케이션의 로그를 확인할 수 있나요?",
+                "path": "pods-log-answer",
+                "answers": ["애플리케이션의 문제를 해결하세요."]
+              },
+              {
+                "direction": "아니오",
+                "title": "컨테이너가 너무 빨리 종료되나요?",
+                "path": "pods-wide-answer-no",
+                "questions": [
+                  {
+                    "direction": "예",
+                    "title": "컨테이너가 너무 빨리 종료되나요?",
+                    "path": "pods-log-answer2",
+                    "answers": [
+                      "kubectl logs <pod-name> --previous 확인",
+                      "/#/get_pod/pod-running/pods-log"
+                    ]
+                  },
+                  {
+                    "cli": "kubectl describe pod <pod-name>",
+                    "direction": "아니오",
+                    "title": "파드 상태가 이미지를 가져올 수 없는 (ImagePullBackOff) 상태인가요?",
+                    "path": "pods-ImagePullBackOff",
+                    "questions": [
+                      {
+                        "direction": "예",
+                        "title": "이미지 이름이 정확한가요?",
+                        "path": "image-name",
+                        "questions": [
+                          {
+                            "direction": "예",
+                            "title": "이미지 태그(Tag)가 유효한가요?",
+                            "path": "image-tag",
+                            "questions": [
+                              {
+                                "direction": "예",
+                                "title": "컨테이너 이미지를 사설 레지스트리 (Private Registry)에서 가져오나요?",
+                                "path": "image-registry",
+                                "questions": [
+                                  {
+                                    "direction": "예",
+                                    "title": "컨테이너 이미지를 사설 레지스트리 (Private Registry)에서 가져오나요?",
+                                    "path": "image-registry-yes",
+                                    "answers": [
+                                      "사설 레지스트리(Pirvate Registry)에서 이미지를 가져오도록 설정하세요."
+                                    ]
+                                  },
+                                  {
+                                    "direction": "아니오",
+                                    "title": "컨테이너 이미지를 사설 레지스트리 (Private Registry)에서 가져오나요?",
+                                    "path": "pods-registry-no",
+                                    "answers": [
+                                      "CRI(Container Runtime Interface)나 Kubelet에 문제가 있습니다."
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "direction": "아니오",
+                                "title": "이미지 태그(Tag)가 유효한가요?",
+                                "path": "pods-tag-answer",
+                                "answers": ["이미지 태그(Tag)를 수정하세요."]
+                              }
+                            ]
+                          },
+                          {
+                            "direction": "아니오",
+                            "title": "이미지 이름이 정확한가요?",
+                            "path": "pods-image-answer",
+                            "answers": ["이미지 이름을 수정하세요."]
+                          }
+                        ]
+                      },
+                      {
+                        "direction": "아니오",
+                        "title": "파드 상태가 비정상 종료를 반복(CrashLoopBackOff) 하고 있나요?",
+                        "path": "no",
+                        "questions": [
+                          {
+                            "direction": "예",
+                            "title": "로그를 확인하고, 애플리케이션 문제를 해결했나요?",
+                            "path": "yes",
+                            "questions": [
+                              {
+                                "direction": "예",
+                                "title": "도커파일(Dockerfile)에 실행 명령이 존재하지 않나요?",
+                                "path": "yes",
+                                "questions": [
+                                  {
+                                    "direction": "예",
+                                    "title": "도커파일(Dockerfile)에 실행 명령이 존재하지 않나요?",
+                                    "path": "yes",
+                                    "answers": [
+                                      "도커파일(Dockerfile)을 수정하세요."
+                                    ]
+                                  },
+                                  {
+                                    "direction": "아니오",
+                                    "title": "파드 상태가 Running과 CrashLoopBackoff으로 계속 바뀌나요?",
+                                    "path": "no",
+                                    "questions": [
+                                      {
+                                        "direction": "예",
+                                        "title": "파드 상태가 Running과 CrashLoopBackoff으로 계속 바뀌나요?",
+                                        "path": "yes",
+                                        "answers": [
+                                          "활성 프로브 (Liveness probe) 설정을 수정하세요."
+                                        ]
+                                      },
+                                      {
+                                        "direction": "아니오",
+                                        "title": "파드 상태가 Running과 CrashLoopBackoff으로 계속 바뀌나요?",
+                                        "path": "no",
+                                        "answers": [
+                                          "알려지지 않은 (Unknown) 상태입니다."
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "direction": "아니오",
+                                "title": "로그를 확인하고, 애플리케이션 문제를 해결했나요?",
+                                "path": "no",
+                                "answers": ["애플리케이션의 문제를 해결하세요."]
+                              }
+                            ]
+                          },
+                          {
+                            "direction": "아니오",
+                            "title": "파드 상태가 컨테이너 실행 오류 (RunContainerError) 인가요?",
+                            "path": "no",
+                            "questions": [
+                              {
+                                "direction": "예",
+                                "title": "파드 상태가 컨테이너 실행 오류 (RunContainerError) 인가요?",
+                                "path": "yes",
+                                "answers": [
+                                  "컨테이너의 구성에 문제가 있습니다."
+                                ]
+                              },
+                              {
+                                "direction": "아니오",
+                                "title": "실행 중 (Running)인 컨테이너가 있나요?",
+                                "path": "no",
+                                "questions": [
+                                  {
+                                    "direction": "예",
+                                    "title": "실행 중 (Running)인 컨테이너가 있나요?",
+                                    "path": "yes",
+                                    "answers": [
+                                      "노드 생명주기 컨트롤러 (node-lifecycle controller) 와 관련된 문제입니다."
+                                    ]
+                                  },
+                                  {
+                                    "direction": "아니오",
+                                    "title": "실행 중 (Running)인 컨테이너가 있나요?",
+                                    "path": "no",
+                                    "answers": ["stack overflow 검색"]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
