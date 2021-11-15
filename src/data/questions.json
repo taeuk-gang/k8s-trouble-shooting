@@ -1,10 +1,11 @@
 [
   {
+    "next": "시작",
     "cli": "kubectl get pods",
     "title": "보류 중인(Pending) 파드가 있나요?",
     "path": "get_pod",
     "questions": [
-      {
+      {        
         "cli": "kubectl describe pod <pod-name>",
         "direction": "예",
         "title": "쿠버네티스 클러스터의 용량이 부족한가요?",

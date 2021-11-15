@@ -71,7 +71,7 @@ export default {
     pageTitle() {
       return this.currentQuestion !== undefined
         ? this.currentQuestion.title
-        : "시작";
+        : "";
     },
     pageCLI() {
       return this?.currentQuestion?.cli ?? ``;
